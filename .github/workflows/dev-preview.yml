@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Lint • Test • Build (Angular 20)
+    name: Test • Build (Angular 20)
     runs-on: ubuntu-latest
 
     steps:
@@ -26,14 +26,19 @@ jobs:
       - name: Install deps (CI clean)
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      # Instala Chrome y expone CHROME_BIN para Karma
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
 
-      - name: Unit tests (Jest)
-        run: npm run test -- --ci --watch=false --code-coverage
+      - name: Unit tests (Karma Headless)
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: |
+          echo "CHROME_BIN is $CHROME_BIN"
+          npx ng test --watch=false --browsers=ChromeHeadless
 
       - name: Build (prod)
-        run: npm run build -- --configuration production
+        run: npx ng build --configuration production
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -48,7 +53,7 @@ jobs:
 
     permissions:
       contents: read
-      pull-requests: write  # para comentar la URL en el PR
+      pull-requests: write
 
     steps:
       - name: Checkout

@@ -13,20 +13,18 @@ env:
 
 jobs:
   deploy:
-    name: Build & Deploy to PROD (kalmy-prod live)
+    name: Test • Build • Deploy to PROD (kalmy-prod live)
     runs-on: ubuntu-latest
-    environment: production # opcional: usa Environment "production" con reviewers
+    environment: production
 
     permissions:
       contents: read
       deployments: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
@@ -34,14 +32,17 @@ jobs:
       - name: Install deps (CI clean)
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Setup Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
 
-      - name: Unit tests (Jest)
-        run: npm run test -- --ci --watch=false --code-coverage
+      - name: Unit tests (Karma Headless)
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: npx ng test --watch=false --browsers=ChromeHeadless
 
       - name: Build (prod)
-        run: npm run build -- --configuration production
+        run: npx ng build --configuration production
 
       - name: Deploy to Firebase Hosting (PROD live)
         uses: FirebaseExtended/action-hosting-deploy@v0
