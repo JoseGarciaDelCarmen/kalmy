@@ -33,9 +33,10 @@ jobs:
       - name: Unit tests (Karma Headless)
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CI: true
         run: |
           echo "CHROME_BIN is $CHROME_BIN"
-          npx ng test --watch=false --browsers=ChromeHeadless --no-progress --source-map=false
+          npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --no-progress --source-map=false
 
       - name: Build (prod)
         run: npx ng build --configuration production
