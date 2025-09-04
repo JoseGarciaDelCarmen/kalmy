@@ -1,0 +1,72 @@
+name: Dev Preview (PR to dev)
+
+on:
+  pull_request:
+    branches: [ "dev" ]
+
+concurrency:
+  group: preview-${{ github.workflow }}-${{ github.ref }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint • Test • Build (Angular 20)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps (CI clean)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests (Jest)
+        run: npm run test -- --ci --watch=false --code-coverage
+
+      - name: Build (prod)
+        run: npm run build -- --configuration production
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: dist/**
+
+  preview:
+    name: Firebase Hosting Preview (expires in 3 days)
+    needs: ci
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write  # para comentar la URL en el PR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-dist
+          path: dist
+
+      - name: Deploy Preview (site: kalmy-dev)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          target: dev
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: 3d
+          entryPoint: .
