@@ -1,0 +1,21 @@
+{
+  "projects": {
+    "default": "kalmy-9daf2"
+  },
+  "targets": {
+    "kalmy-9daf2": {
+      "hosting": {
+        "production": [
+          "kalmy-prod"
+        ],
+        "test": [
+          "kalmy-test"
+        ],
+        "dev": [
+          "kalmy-dev"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
