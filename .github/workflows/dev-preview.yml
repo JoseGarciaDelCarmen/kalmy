@@ -2,7 +2,7 @@ name: Dev Preview (PR to dev)
 
 on:
   pull_request:
-    branches: [ "dev" ]
+    branches: ['dev']
 
 concurrency:
   group: preview-${{ github.workflow }}-${{ github.ref }}-${{ github.event.pull_request.number }}
@@ -26,7 +26,6 @@ jobs:
       - name: Install deps (CI clean)
         run: npm ci
 
-      # Instala Chrome y expone CHROME_BIN para Karma
       - name: Setup Chrome
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1
@@ -36,7 +35,7 @@ jobs:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           echo "CHROME_BIN is $CHROME_BIN"
-          npx ng test --watch=false --browsers=ChromeHeadless --no-progress --source-map=false --code-coverage --no-sandbox
+          npx ng test --watch=false --browsers=ChromeHeadless --no-progress --source-map=false
 
       - name: Build (prod)
         run: npx ng build --configuration production
@@ -66,9 +65,13 @@ jobs:
           name: angular-dist
           path: dist
 
-      - name: Deploy Preview (site: kalmy-dev)
+      - name: Deploy Preview (kalmy-dev)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          target: dev
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: '3d'
+          entryPoint: .
