@@ -1,0 +1,53 @@
+name: Deploy QA (push to test)
+
+on:
+  push:
+    branches: ['test']
+
+concurrency:
+  group: deploy-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FIREBASE_TARGET: test
+
+jobs:
+  deploy:
+    name: Build & Deploy to QA (kalmy-test live)
+    runs-on: ubuntu-latest
+    environment: test # opcional: crea Environment "test" con reviewers si quieres aprobación
+
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps (CI clean)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests (Jest)
+        run: npm run test -- --ci --watch=false --code-coverage
+
+      - name: Build (prod)
+        run: npm run build -- --configuration production
+
+      - name: Deploy to Firebase Hosting (QA live)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          target: ${{ env.FIREBASE_TARGET }}
+          channelId: live
+          entryPoint: .
